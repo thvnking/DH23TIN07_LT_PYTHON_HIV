@@ -1,6 +1,5 @@
 # DH23TIN07_LT_PYTHON_HIV
 
-Repository for Python lab exercises and coursework.
 
 ## Nội dung
 
@@ -8,7 +7,7 @@ Các bài thực hành và tài liệu liên quan đến học phần Python s�
 
 ## Sử dụng
 
-Clone repository về máy:
+Clone repository về:
 
 ```bash
 git clone <repository-url>
