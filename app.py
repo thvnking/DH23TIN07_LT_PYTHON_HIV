@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-ĐỒ ÁN LẬP TRÌNH PYTHON (DH23TIN07) - GOOGLE MAPS HIV/AIDS TOÀN CẦU
+ĐỒ ÁN LẬP TRÌNH PYTHON (DH23TIN07) - HỆ THỐNG GIÁM SÁT DỊCH TỄ HIV/AIDS TOÀN CẦU
 ================================================================================
-Giao diện phong cách Google Maps:
-- Bên trái: Bản đồ thế giới tương tác mượt mà, zoom & pan mượt, highlight quốc gia.
-- Bên phải: Bảng thông số chia làm 4 mục riêng biệt (Tabs), mỗi mục có biểu đồ riêng.
-- Dữ liệu tích hợp từ 2 bảng báo cáo:
-    1. HIV_AIDS prevalence estimates table.csv
-    2. art_coverage_by_country_clean.csv
+Giao diện ứng dụng y tế chuyên nghiệp (Medical Theme):
+- Phong cách: Nền trắng thanh lịch, chi tiết đỏ y tế (Medical Red / Crimson).
+- Bản đồ thế giới mặc định nằm chính giữa khung nhìn (Centered World View).
+- Bên trái: Bản đồ dịch tễ thế giới tương tác, tự động highlight quốc gia được chọn.
+- Bên phải: Bảng thông số y tế chia thành 4 mục chuyên biệt, mỗi mục có biểu đồ riêng:
+    1. Tổng quan (Hồ sơ dịch tễ & Biểu đồ tiến độ UNAIDS 95-95-95)
+    2. Bảng 1: Dịch tễ (Hiện nhiễm, tử vong & Biểu đồ so sánh chuẩn WHO / Toàn cầu)
+    3. Bảng 2: Điều trị ART (Tiếp cận thuốc kháng virus & Biểu đồ dải bất định Min-Max)
+    4. Bảng 3: Dự báo Machine Learning (Hồi quy Ridge Task T1 & Biểu đồ đối chiếu)
 ================================================================================
 """
 
@@ -90,7 +93,7 @@ ISO3_MAP = {
     "korea, north": "PRK", "north korea": "PRK", "democratic people's republic of korea": "PRK"
 }
 
-# Tọa độ tâm (Lat, Lon) phục vụ hiệu ứng bay/zoom kiểu Google Maps
+# Tọa độ tâm (Lat, Lon) phục vụ hiệu ứng bay/zoom
 COUNTRY_COORDS = {
     "VNM": (14.05, 108.27), "ZAF": (-30.55, 22.93), "THA": (15.87, 100.99),
     "USA": (37.09, -95.71), "FRA": (46.22, 2.21), "SWZ": (-26.52, 31.46),
@@ -240,7 +243,7 @@ def load_all_data():
         if iso3: used_isos[iso3] = item
         country_list.append(item)
 
-    # Tính toán trung bình theo khu vực WHO phục vụ biểu đồ so sánh
+    # Tính toán trung bình theo khu vực WHO
     region_stats = {}
     for c in country_list:
         r = c['region']
@@ -296,10 +299,11 @@ def load_all_data():
 
             hover = (
                 f"<b>{c['name']} ({c['iso3']})</b><br>"
-                f"• Tỷ lệ HIV: {c['kpi']['prevalence_display']}<br>"
-                f"• Số ca PLHIV: {c['kpi']['plhiv_display']}<br>"
-                f"• Bao phủ ART: {c['kpi']['art_cov_display']}<br>"
-                f"<i>👉 Bấm để xem bảng chi tiết bên phải</i>"
+                f"• Tỷ lệ hiện nhiễm: {c['kpi']['prevalence_display']}<br>"
+                f"• Số ca sống chung (PLHIV): {c['kpi']['plhiv_display']}<br>"
+                f"• Ca tử vong hàng năm: {c['kpi']['deaths_display']}<br>"
+                f"• Độ bao phủ điều trị ART: {c['kpi']['art_cov_display']}<br>"
+                f"<i>Nhấp chuột để xem chi tiết bên phải</i>"
             )
             map_data['hover_text'].append(hover)
 
@@ -434,52 +438,134 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps HIV/AIDS Explorer • DH23TIN07</title>
+  <title>Hệ Thống Giám Sát Dịch Tễ HIV/AIDS Toàn Cầu • DH23TIN07</title>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --bg-panel: #1e293b;
-      --bg-card: #0b1120;
-      --border: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --accent-red: #ef4444;
-      --accent-green: #10b981;
-      --accent-yellow: #f59e0b;
-      --accent-purple: #a855f7;
+      --bg-body: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --primary-red: #dc2626;
+      --primary-red-hover: #b91c1c;
+      --primary-red-light: #fef2f2;
+      --primary-red-border: #fecaca;
+      --accent-green: #059669;
+      --accent-green-light: #ecfdf5;
+      --accent-amber: #d97706;
+      --accent-blue: #2563eb;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 14px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     html, body {
       height: 100%;
       width: 100%;
       overflow: hidden;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
+      background-color: var(--bg-body);
+      color: var(--text-primary);
     }
 
-    /* GOOGLE MAPS SPLIT-SCREEN LAYOUT */
+    /* TOP CLINICAL HEADER BAR */
+    .top-navbar {
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 40;
+      position: relative;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--primary-red);
+      color: #fff;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+
+    .brand-text span {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-kpi-summary {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .kpi-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      background: var(--bg-subtle);
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .kpi-chip strong {
+      color: var(--primary-red);
+      font-weight: 700;
+    }
+
+    /* MAIN SPLIT-SCREEN LAYOUT */
     .app-layout {
       display: flex;
-      height: 100vh;
+      height: calc(100vh - 52px);
       width: 100vw;
       position: relative;
     }
 
-    /* MAP CONTAINER (LEFT SIDE - 65%) */
+    /* MAP CONTAINER (LEFT SIDE - 63%) */
     .map-container {
       flex: 1;
       height: 100%;
       position: relative;
-      background: #090d16;
+      background: #f8fafc;
     }
 
     #world-map-plot {
@@ -487,39 +573,38 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       height: 100%;
     }
 
-    /* FLOATING SEARCH BAR (GOOGLE MAPS STYLE) */
+    /* FLOATING SEARCH & CONTROLS (MEDICAL WHITE CARD STYLE) */
     .floating-search-bar {
       position: absolute;
-      top: 18px;
-      left: 20px;
+      top: 16px;
+      left: 16px;
       z-index: 20;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      width: 360px;
-      max-width: calc(100vw - 40px);
+      width: 380px;
+      max-width: calc(100vw - 32px);
     }
 
     .search-input-wrapper {
-      background: rgba(30, 41, 59, 0.95);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 28px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      box-shadow: var(--shadow-md);
       display: flex;
       align-items: center;
       padding: 6px 16px;
-      transition: all 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .search-input-wrapper:focus-within {
-      border-color: var(--primary);
-      box-shadow: 0 8px 32px rgba(56, 189, 248, 0.35);
+      border-color: var(--primary-red);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12), var(--shadow-md);
     }
 
     .search-input-wrapper .icon {
-      font-size: 1rem;
-      color: var(--text-muted);
+      font-size: 0.95rem;
+      color: var(--primary-red);
       margin-right: 10px;
     }
 
@@ -527,36 +612,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       background: transparent;
       border: none;
       outline: none;
-      color: #fff;
-      font-size: 0.95rem;
+      color: var(--text-primary);
+      font-size: 0.88rem;
       width: 100%;
+      font-weight: 500;
     }
 
-    /* AUTOCOMPLETE SUGGESTIONS */
+    .search-input-wrapper input::placeholder {
+      color: var(--text-muted);
+    }
+
     .search-suggestions {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
       max-height: 240px;
       overflow-y: auto;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      box-shadow: var(--shadow-lg);
       display: none;
     }
 
     .suggestion-item {
       padding: 10px 16px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       cursor: pointer;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid var(--border-color);
       transition: background 0.15s;
+      color: var(--text-secondary);
     }
 
     .suggestion-item:hover {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--primary);
+      background: var(--primary-red-light);
+      color: var(--primary-red);
+      font-weight: 600;
     }
 
-    /* FLOATING QUICK PILLS */
+    /* QUICK PILLS UNDER SEARCH */
     .quick-country-pills {
       display: flex;
       gap: 6px;
@@ -569,62 +660,63 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .map-pill {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border);
-      color: #e2e8f0;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 0.78rem;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.74rem;
+      font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.15s ease;
     }
 
     .map-pill:hover {
-      background: var(--primary);
-      color: #0b1120;
-      border-color: var(--primary);
+      background: var(--primary-red);
+      color: #fff;
+      border-color: var(--primary-red);
       transform: translateY(-1px);
     }
 
-    /* FLOATING MAP CONTROLS */
+    /* FLOATING MAP MODE SELECTOR */
     .floating-map-controls {
       position: absolute;
-      top: 18px;
-      right: 20px;
+      top: 16px;
+      right: 16px;
       z-index: 20;
       display: flex;
-      gap: 6px;
-      background: rgba(30, 41, 59, 0.9);
-      backdrop-filter: blur(8px);
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.95);
       padding: 4px;
       border-radius: 8px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-md);
     }
 
     .map-mode-btn {
       background: transparent;
       border: none;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       padding: 6px 12px;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .map-mode-btn.active {
-      background: var(--primary);
-      color: #0b1120;
+      background: var(--primary-red);
+      color: #fff;
     }
 
-    /* GOOGLE MAPS FLOATING ZOOM BUTTONS */
+    /* FLOATING ZOOM & RESET BUTTONS */
     .floating-zoom-buttons {
       position: absolute;
-      bottom: 30px;
-      left: 20px;
+      bottom: 24px;
+      left: 16px;
       z-index: 20;
       display: flex;
       flex-direction: column;
@@ -632,55 +724,54 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .zoom-btn {
-      width: 38px;
-      height: 38px;
-      background: rgba(30, 41, 59, 0.9);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border);
+      width: 36px;
+      height: 36px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
       border-radius: 8px;
-      color: #fff;
+      color: var(--text-primary);
       font-size: 1.1rem;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      box-shadow: var(--shadow-md);
+      transition: all 0.15s ease;
     }
 
     .zoom-btn:hover {
-      background: var(--primary);
-      color: #0b1120;
-      border-color: var(--primary);
+      background: var(--primary-red-light);
+      border-color: var(--primary-red-border);
+      color: var(--primary-red);
     }
 
-    /* SIDEBAR / INFO PANEL (RIGHT SIDE - 35% ~ 38%) */
+    /* SIDE PANEL (RIGHT SIDE - 37%) */
     .side-panel {
-      width: 490px;
-      max-width: 45vw;
+      width: 480px;
+      max-width: 42vw;
       height: 100%;
-      background: var(--bg-panel);
-      border-left: 1px solid var(--border);
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
       display: flex;
       flex-direction: column;
-      box-shadow: -8px 0 35px rgba(0, 0, 0, 0.5);
+      box-shadow: -4px 0 25px rgba(0, 0, 0, 0.05);
       z-index: 30;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
 
-    /* PANEL HEADER */
+    /* CLINICAL TOP ACCENT BAR */
     .panel-header {
-      padding: 20px 24px 14px;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.7) 0%, rgba(30, 41, 59, 0.7) 100%);
-      border-bottom: 1px solid var(--border);
-      position: relative;
+      padding: 16px 20px 12px;
+      background: var(--bg-surface);
+      border-top: 4px solid var(--primary-red);
+      border-bottom: 1px solid var(--border-color);
     }
 
     .panel-top-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .country-header-title {
@@ -695,9 +786,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .country-header-title h2 {
-      font-size: 1.55rem;
+      font-size: 1.45rem;
       font-weight: 800;
-      color: #fff;
+      color: var(--text-primary);
       letter-spacing: -0.3px;
     }
 
@@ -708,37 +799,37 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .badge {
-      background: rgba(56, 189, 248, 0.12);
-      color: var(--primary);
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      background: var(--primary-red-light);
+      color: var(--primary-red);
+      border: 1px solid var(--primary-red-border);
       padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
     }
 
     .badge.region {
-      background: rgba(168, 85, 247, 0.12);
-      color: var(--accent-purple);
-      border-color: rgba(168, 85, 247, 0.3);
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border-color: var(--border-color);
     }
 
-    /* TABS NAVIGATION (4 MỤC RIÊNG BIỆT) */
+    /* 4 TABS NAVIGATION */
     .tabs-nav {
       display: flex;
-      background: #0b1120;
-      border-bottom: 1px solid var(--border);
-      padding: 0 12px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 8px;
       position: relative;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 13px 6px;
+      padding: 12px 4px;
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -746,50 +837,52 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       align-items: center;
       gap: 4px;
       position: relative;
-      transition: color 0.25s ease;
+      transition: all 0.2s ease;
     }
 
     .tab-btn:hover {
-      color: #fff;
+      color: var(--primary-red);
     }
 
     .tab-btn.active {
-      color: var(--primary);
+      color: var(--primary-red);
+      font-weight: 700;
     }
 
     .tab-btn .tab-icon {
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
-    /* SLIDING TAB INDICATOR */
+    /* RED SLIDING INDICATOR */
     .tab-indicator {
       position: absolute;
       bottom: 0;
       height: 3px;
-      background: var(--primary);
+      background: var(--primary-red);
       border-radius: 3px 3px 0 0;
-      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    /* PANEL CONTENT (SCROLLABLE BODY) */
+    /* PANEL BODY (SCROLLABLE) */
     .panel-body {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 18px 20px;
+      background: #fbfcfd;
     }
 
     .panel-body::-webkit-scrollbar {
-      width: 6px;
+      width: 5px;
     }
     .panel-body::-webkit-scrollbar-thumb {
-      background: var(--border);
+      background: #cbd5e1;
       border-radius: 4px;
     }
 
     /* TAB CONTENT SECTIONS */
     .tab-section {
       display: none;
-      animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: tabFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .tab-section.active {
@@ -799,7 +892,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     @keyframes tabFadeIn {
       from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(6px);
       }
       to {
         opacity: 1;
@@ -807,125 +900,53 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
-    /* SECTION TITLE & DESCRIPTION */
     .section-head {
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .section-head h3 {
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .section-head p {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
-    /* DEDICATED CHART BOX IN EACH TAB */
+    /* DEDICATED CLINICAL CHART BOX */
     .chart-container-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
       padding: 16px;
-      margin-bottom: 18px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
     }
 
     .chart-title {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 12px;
+      color: var(--primary-red);
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .chart-badge {
-      font-size: 0.72rem;
-      background: rgba(255,255,255,0.08);
+      font-size: 0.68rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
       padding: 2px 6px;
       border-radius: 4px;
       color: var(--text-muted);
-    }
-
-    /* KPI MINI-GRID */
-    .kpi-mini-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .kpi-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-    }
-
-    .kpi-item.accent-red { border-left: 3px solid var(--accent-red); }
-    .kpi-item.accent-blue { border-left: 3px solid var(--primary); }
-    .kpi-item.accent-green { border-left: 3px solid var(--accent-green); }
-    .kpi-item.accent-yellow { border-left: 3px solid var(--accent-yellow); }
-
-    .kpi-item .lbl {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .kpi-item .val {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #fff;
-      margin-top: 4px;
-    }
-
-    /* STYLED DATA TABLES */
-    .info-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 0.85rem;
-      margin-bottom: 16px;
-    }
-
-    .info-table th, .info-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      text-align: left;
-    }
-
-    .info-table th {
-      color: var(--text-muted);
-      font-weight: 600;
-      background: rgba(255,255,255,0.02);
-      width: 48%;
-    }
-
-    .info-table td {
-      color: #fff;
-      font-weight: 600;
-    }
-
-    .info-table tr:last-child th,
-    .info-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .highlight-val {
-      color: var(--primary) !important;
+      font-weight: 500;
     }
 
     /* GAUGE PROGRESS BAR FOR UNAIDS 95% */
@@ -933,25 +954,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10px 0;
+      padding: 8px 0;
     }
 
     .circle-progress-svg {
-      width: 130px;
-      height: 130px;
+      width: 124px;
+      height: 124px;
       transform: rotate(-90deg);
     }
 
     .circle-bg {
       fill: none;
-      stroke: rgba(255,255,255,0.08);
-      stroke-width: 10;
+      stroke: var(--bg-subtle);
+      stroke-width: 9;
     }
 
     .circle-fill {
       fill: none;
-      stroke: var(--accent-green);
-      stroke-width: 10;
+      stroke: var(--primary-red);
+      stroke-width: 9;
       stroke-linecap: round;
       stroke-dasharray: 345;
       stroke-dashoffset: 345;
@@ -967,17 +988,95 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .gauge-center-text .pct {
-      font-size: 1.6rem;
+      font-size: 1.55rem;
       font-weight: 800;
-      color: #fff;
+      color: var(--text-primary);
     }
 
     .gauge-center-text .sub {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: var(--text-muted);
+      font-weight: 600;
     }
 
-    /* CUSTOM SVG COMPARISON BARS */
+    /* MINI KPI GRID */
+    .kpi-mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-item.accent-red { border-left: 3px solid var(--primary-red); }
+    .kpi-item.accent-dark-red { border-left: 3px solid #991b1b; }
+    .kpi-item.accent-green { border-left: 3px solid var(--accent-green); }
+    .kpi-item.accent-slate { border-left: 3px solid var(--text-secondary); }
+
+    .kpi-item .lbl {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .kpi-item .val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+
+    /* STYLED MEDICAL DATA TABLES */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      font-size: 0.82rem;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-table th, .info-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    .info-table th {
+      color: var(--text-secondary);
+      font-weight: 600;
+      background: #f8fafc;
+      width: 48%;
+    }
+
+    .info-table td {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .info-table tr:last-child th,
+    .info-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .highlight-red {
+      color: var(--primary-red) !important;
+      font-weight: 700 !important;
+    }
+
+    /* COMPARISON BARS IN TAB 2 */
     .comp-bar-row {
       margin-bottom: 12px;
     }
@@ -985,16 +1084,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .comp-bar-label {
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       margin-bottom: 4px;
+      color: var(--text-secondary);
     }
 
     .comp-bar-track {
-      height: 10px;
-      background: rgba(255,255,255,0.08);
+      height: 9px;
+      background: var(--bg-subtle);
       border-radius: 5px;
       overflow: hidden;
       position: relative;
+      border: 1px solid #e2e8f0;
     }
 
     .comp-bar-fill {
@@ -1003,43 +1104,52 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* ML COMPARISON CARDS */
+    /* ML COMPARISON CARDS IN TAB 4 */
     .ml-compare-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .ml-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
       padding: 12px;
       text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ml-card.highlight {
+      border: 1.5px solid var(--primary-red);
+      background: var(--primary-red-light);
     }
 
     .ml-card .tag {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
       text-transform: uppercase;
+      font-weight: 600;
     }
 
     .ml-card .number {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 800;
+      color: var(--text-primary);
       margin-top: 4px;
     }
 
     .formula-banner {
-      background: rgba(168, 85, 247, 0.1);
-      border: 1px solid rgba(168, 85, 247, 0.25);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 0.76rem;
-      color: #d8b4fe;
-      font-family: monospace;
-      margin-bottom: 16px;
+      background: var(--primary-red-light);
+      border: 1px solid var(--primary-red-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.74rem;
+      color: #991b1b;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      margin-bottom: 14px;
+      line-height: 1.4;
     }
 
     @media (max-width: 900px) {
@@ -1059,20 +1169,45 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 
+  <!-- TOP CLINICAL NAVBAR -->
+  <header class="top-navbar">
+    <div class="brand-title">
+      <div class="brand-icon">✚</div>
+      <div class="brand-text">
+        <h1>HỆ THỐNG GIÁM SÁT DỊCH TỄ HIV/AIDS TOÀN CẦU</h1>
+        <span>ĐỒ ÁN LẬP TRÌNH PYTHON • LỚP DH23TIN07</span>
+      </div>
+    </div>
+    <div class="header-kpi-summary">
+      <div class="kpi-chip">
+        <span>Tổng khảo sát:</span>
+        <strong id="top-countries">204 quốc gia</strong>
+      </div>
+      <div class="kpi-chip">
+        <span>Tổng PLHIV:</span>
+        <strong id="top-plhiv">~38.000.000+</strong>
+      </div>
+      <div class="kpi-chip">
+        <span>Tử vong/năm:</span>
+        <strong id="top-deaths">~630.000+ ca</strong>
+      </div>
+    </div>
+  </header>
+
   <div class="app-layout">
 
-    <!-- MAP CONTAINER (LEFT SIDE - GOOGLE MAPS STYLE) -->
+    <!-- MAP CONTAINER (LEFT SIDE - FULL CENTERED GLOBE) -->
     <div class="map-container">
       
       <!-- FLOATING SEARCH BAR -->
       <div class="floating-search-bar">
         <div class="search-input-wrapper">
           <span class="icon">🔍</span>
-          <input type="text" id="map-search" placeholder="Tìm kiếm quốc gia (VD: Vietnam, South Africa, France...)">
+          <input type="text" id="map-search" placeholder="Tìm quốc gia (VD: Vietnam, South Africa, Thailand, France...)">
         </div>
         <div class="search-suggestions" id="suggestions-box"></div>
 
-        <!-- QUICK PILLS -->
+        <!-- QUICK SELECT PILLS -->
         <div class="quick-country-pills">
           <button class="map-pill" onclick="selectCountry('Vietnam')">🇻🇳 Việt Nam</button>
           <button class="map-pill" onclick="selectCountry('South Africa')">🇿🇦 Nam Phi</button>
@@ -1087,35 +1222,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       <!-- FLOATING MAP CONTROLS -->
       <div class="floating-map-controls">
-        <button class="map-mode-btn active" id="btn-mode-prev" onclick="setMapMode('prevalence')">🔴 Tỷ lệ HIV</button>
-        <button class="map-mode-btn" id="btn-mode-cov" onclick="setMapMode('art_cov')">🟢 Bao phủ ART</button>
-        <button class="map-mode-btn" id="btn-mode-plhiv" onclick="setMapMode('plhiv')">🟣 Số người nhiễm</button>
+        <button class="map-mode-btn active" id="btn-mode-prev" onclick="setMapMode('prevalence')">🔴 Tỷ lệ HIV (%)</button>
+        <button class="map-mode-btn" id="btn-mode-cov" onclick="setMapMode('art_cov')">🟢 Bao phủ ART (%)</button>
+        <button class="map-mode-btn" id="btn-mode-plhiv" onclick="setMapMode('plhiv')">🩸 Số ca nhiễm</button>
       </div>
 
       <!-- FLOATING ZOOM CONTROLS -->
       <div class="floating-zoom-buttons">
         <button class="zoom-btn" title="Phóng to" onclick="zoomMap(1.4)">＋</button>
         <button class="zoom-btn" title="Thu nhỏ" onclick="zoomMap(0.7)">－</button>
-        <button class="zoom-btn" title="Khôi phục toàn cảnh" onclick="resetMapView()">⟲</button>
+        <button class="zoom-btn" title="Căn giữa toàn cầu (Reset View)" onclick="resetMapView()">⟲</button>
       </div>
 
       <!-- PLOTLY MAP CANVAS -->
       <div id="world-map-plot"></div>
     </div>
 
-    <!-- SIDEBAR / INFO PANEL (RIGHT SIDE - 4 TABS WITH DEDICATED CHARTS) -->
+    <!-- SIDEBAR / INFO PANEL (RIGHT SIDE - 4 MEDICAL TABS) -->
     <div class="side-panel">
       
-      <!-- PANEL HEADER -->
+      <!-- CLINICAL PANEL HEADER -->
       <div class="panel-header">
         <div class="panel-top-row">
           <div class="country-header-title">
-            <span class="flag" id="panel-flag">🏳️</span>
+            <span class="flag" id="panel-flag">🇻🇳</span>
             <div>
               <h2 id="panel-country-name">Vietnam</h2>
               <div class="badges-row">
                 <span class="badge" id="panel-iso">ISO: VNM</span>
-                <span class="badge region" id="panel-region">Western Pacific</span>
+                <span class="badge region" id="panel-region">Khu vực: Western Pacific</span>
               </div>
             </div>
           </div>
@@ -1151,11 +1286,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <!-- ========================================== -->
         <div class="tab-section active" id="tab-overview">
           <div class="section-head">
-            <h3>📋 Hồ Sơ Dịch Tễ Quốc Gia</h3>
-            <p>Tổng hợp các chỉ số trọng yếu từ cả 2 bộ dữ liệu UNAIDS & WHO</p>
+            <h3>📋 Hồ Sơ Giám Sát Dịch Tễ</h3>
+            <p>Tổng hợp chỉ số trọng yếu từ cơ sở dữ liệu UNAIDS & WHO</p>
           </div>
 
-          <!-- BIỂU ĐỒ 1: TIẾN TRÌNH BAO PHỦ ART THEO MỤC TIÊU 95% CỦA UNAIDS -->
+          <!-- BIỂU ĐỒ 1: DONUT GAUGE MỤC TIÊU 95% UNAIDS -->
           <div class="chart-container-box">
             <div class="chart-title">
               <span>🎯 Tiến Độ Bao Phủ ART (Mục Tiêu 95% UNAIDS)</span>
@@ -1171,23 +1306,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div class="sub">Mục tiêu: 95%</div>
               </div>
             </div>
-            <p style="text-align: center; font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;" id="gauge-eval-text">
-              Đang tính toán tiến độ phổ cập điều trị kháng virus...
+            <p style="text-align: center; font-size: 0.74rem; color: var(--text-muted); margin-top: 6px;" id="gauge-eval-text">
+              Đang tính toán tiến độ điều trị theo chuẩn y tế quốc tế...
             </p>
           </div>
 
           <!-- MINI KPI GRID -->
           <div class="kpi-mini-grid">
-            <div class="kpi-item accent-blue">
+            <div class="kpi-item accent-red">
               <div class="lbl">Số người nhiễm (PLHIV)</div>
               <div class="val" id="mini-plhiv">—</div>
             </div>
-            <div class="kpi-item accent-red">
-              <div class="lbl">Tỷ lệ hiện nhiễm</div>
+            <div class="kpi-item accent-dark-red">
+              <div class="lbl">Tỷ lệ hiện nhiễm người lớn</div>
               <div class="val" id="mini-prev">—</div>
             </div>
-            <div class="kpi-item accent-yellow">
-              <div class="lbl">Tử vong hàng năm</div>
+            <div class="kpi-item accent-slate">
+              <div class="lbl">Tử vong do AIDS hàng năm</div>
               <div class="val" id="mini-deaths">—</div>
             </div>
             <div class="kpi-item accent-green">
@@ -1205,7 +1340,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </tr>
               <tr>
                 <th>Số ca điều trị thực tế</th>
-                <td id="ov-art-count" class="highlight-val">—</td>
+                <td id="ov-art-count" class="highlight-red">—</td>
               </tr>
               <tr>
                 <th>Khu vực quản lý</th>
@@ -1216,48 +1351,48 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <!-- ========================================== -->
-        <!-- MỤC 2: BẢNG 1 - HIỆN NHIỄM & TỬ VONG (VỚI BIỂU ĐỒ CỘT SO SÁNH KHU VỰC) -->
+        <!-- MỤC 2: BẢNG 1 - DỊCH TỄ & BIỂU ĐỒ SO SÁNH -->
         <!-- ========================================== -->
         <div class="tab-section" id="tab-table1">
           <div class="section-head">
             <h3>📊 Bảng 1: Ước Tính Hiện Nhiễm & Tử Vong</h3>
-            <p>Trích xuất từ tệp: <code>HIV_AIDS prevalence estimates table.csv</code></p>
+            <p>Trích xuất từ: <code>HIV_AIDS prevalence estimates table.csv</code></p>
           </div>
 
-          <!-- BIỂU ĐỒ 2: SO SÁNH TỶ LỆ HIV VỚI KHU VỰC & TOÀN CẦU -->
+          <!-- BIỂU ĐỒ 2: CỘT SO SÁNH TỶ LỆ HIV -->
           <div class="chart-container-box">
             <div class="chart-title">
-              <span>📈 So Sánh Tỷ Lệ HIV (%) Với Khu Vực & Thế Giới</span>
+              <span>📈 So Sánh Tỷ Lệ HIV (%) Với Khu Vực & Toàn Cầu</span>
               <span class="chart-badge">Biểu đồ Cột Ngang</span>
             </div>
             
             <div class="comp-bar-row">
               <div class="comp-bar-label">
                 <span id="bar-lbl-country">Quốc gia được chọn</span>
-                <span id="bar-val-country" style="color: var(--accent-red); font-weight: 700;">0.70%</span>
+                <span id="bar-val-country" style="color: var(--primary-red); font-weight: 700;">0.70%</span>
               </div>
               <div class="comp-bar-track">
-                <div class="comp-bar-fill" id="bar-fill-country" style="width: 0%; background: var(--accent-red);"></div>
+                <div class="comp-bar-fill" id="bar-fill-country" style="width: 0%; background: var(--primary-red);"></div>
               </div>
             </div>
 
             <div class="comp-bar-row">
               <div class="comp-bar-label">
                 <span id="bar-lbl-region">Trung bình khu vực WHO</span>
-                <span id="bar-val-region" style="color: var(--accent-yellow); font-weight: 700;">0.33%</span>
+                <span id="bar-val-region" style="color: var(--accent-amber); font-weight: 700;">0.33%</span>
               </div>
               <div class="comp-bar-track">
-                <div class="comp-bar-fill" id="bar-fill-region" style="width: 0%; background: var(--accent-yellow);"></div>
+                <div class="comp-bar-fill" id="bar-fill-region" style="width: 0%; background: var(--accent-amber);"></div>
               </div>
             </div>
 
             <div class="comp-bar-row">
               <div class="comp-bar-label">
                 <span>Trung bình toàn cầu (Global Average)</span>
-                <span id="bar-val-global" style="color: var(--primary); font-weight: 700;">1.85%</span>
+                <span id="bar-val-global" style="color: var(--text-secondary); font-weight: 700;">1.85%</span>
               </div>
               <div class="comp-bar-track">
-                <div class="comp-bar-fill" id="bar-fill-global" style="width: 0%; background: var(--primary);"></div>
+                <div class="comp-bar-fill" id="bar-fill-global" style="width: 0%; background: #94a3b8;"></div>
               </div>
             </div>
           </div>
@@ -1266,12 +1401,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <table class="info-table">
             <tbody>
               <tr>
-                <th>Tên trong bảng 1</th>
+                <th>Tên định danh trong bảng 1</th>
                 <td id="t1-name">—</td>
               </tr>
               <tr>
                 <th>Tỷ lệ hiện nhiễm người lớn</th>
-                <td id="t1-prev-val" class="highlight-val">—</td>
+                <td id="t1-prev-val" class="highlight-red">—</td>
               </tr>
               <tr>
                 <th>Số người sống chung với HIV</th>
@@ -1279,7 +1414,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </tr>
               <tr>
                 <th>Số ca tử vong hằng năm</th>
-                <td id="t1-deaths-val" style="color: var(--accent-yellow);">—</td>
+                <td id="t1-deaths-val" style="color: #991b1b;">—</td>
               </tr>
               <tr>
                 <th>Năm ước tính</th>
@@ -1294,36 +1429,34 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <!-- ========================================== -->
-        <!-- MỤC 3: BẢNG 2 - ĐIỀU TRỊ ART (VỚI BIỂU ĐỒ DẢI KHOẢNG TIN CẬY MIN-MAX) -->
+        <!-- MỤC 3: BẢNG 2 - ĐIỀU TRỊ ART & BIỂU ĐỒ RANGE -->
         <!-- ========================================== -->
         <div class="tab-section" id="tab-table2">
           <div class="section-head">
             <h3>💊 Bảng 2: Tình Hình Điều Trị Thuốc Kháng Virus (ART)</h3>
-            <p>Trích xuất từ tệp: <code>art_coverage_by_country_clean.csv</code></p>
+            <p>Trích xuất từ: <code>art_coverage_by_country_clean.csv</code></p>
           </div>
 
-          <!-- BIỂU ĐỒ 3: KHOẢNG BIẾN THIÊN [MIN – MEDIAN – MAX] ĐỘ BAO PHỦ ART -->
+          <!-- BIỂU ĐỒ 3: KHOẢNG BIẾN THIÊN [MIN – MEDIAN – MAX] -->
           <div class="chart-container-box">
             <div class="chart-title">
-              <span>📊 Khoảng Ước Tính Độ Bao Phủ ART [Min – Max %]</span>
+              <span>📊 Dải Ước Tính Độ Bao Phủ ART [Min – Max %]</span>
               <span class="chart-badge">Biểu đồ Biên Độ (Range)</span>
             </div>
 
             <div style="padding: 10px 0;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px;">
                 <span id="range-lbl-min">Min: 0%</span>
-                <span id="range-lbl-med" style="color: var(--accent-green); font-weight: 700;">Trung vị: 0%</span>
+                <span id="range-lbl-med" style="color: var(--primary-red); font-weight: 700;">Trung vị: 0%</span>
                 <span id="range-lbl-max">Max: 0%</span>
               </div>
-              <div style="height: 14px; background: rgba(255,255,255,0.06); border-radius: 7px; position: relative;">
-                <!-- Dải Min - Max -->
-                <div id="range-bar-span" style="position: absolute; height: 100%; background: rgba(16, 185, 129, 0.35); border-radius: 7px; left: 0%; width: 0%; transition: all 0.8s;"></div>
-                <!-- Điểm Median -->
-                <div id="range-point-med" style="position: absolute; width: 14px; height: 14px; background: var(--accent-green); border: 2px solid #fff; border-radius: 50%; top: 0; left: 0%; transform: translateX(-50%); transition: all 0.8s;"></div>
+              <div style="height: 12px; background: var(--bg-subtle); border-radius: 6px; position: relative; border: 1px solid var(--border-color);">
+                <div id="range-bar-span" style="position: absolute; height: 100%; background: rgba(220, 38, 38, 0.25); border-radius: 6px; left: 0%; width: 0%; transition: all 0.8s;"></div>
+                <div id="range-point-med" style="position: absolute; width: 14px; height: 14px; background: var(--primary-red); border: 2px solid #fff; border-radius: 50%; top: -1px; left: 0%; transform: translateX(-50%); transition: all 0.8s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);"></div>
               </div>
             </div>
-            <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 8px;" id="range-expl-text">
-              Biểu thị dải bất định theo chuẩn WHO trong ước tính độ tiếp cận điều trị kháng vi-rút.
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;" id="range-expl-text">
+              Dải ước tính bất định theo khuyến cáo của Tổ chức Y tế Thế giới (WHO).
             </p>
           </div>
 
@@ -1336,10 +1469,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </tr>
               <tr>
                 <th>Số người đang nhận ART</th>
-                <td id="t2-art-val" class="highlight-val">—</td>
+                <td id="t2-art-val" class="highlight-red">—</td>
               </tr>
               <tr>
-                <th>Ước tính PLHIV (Median)</th>
+                <th>Ước tính PLHIV (Trung vị)</th>
                 <td id="t2-plhiv-med">—</td>
               </tr>
               <tr>
@@ -1347,8 +1480,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <td id="t2-plhiv-span">—</td>
               </tr>
               <tr>
-                <th>Tỷ lệ bao phủ ART (Median %)</th>
-                <td id="t2-cov-med" style="color: var(--accent-green);">—</td>
+                <th>Tỷ lệ bao phủ ART (Trung vị %)</th>
+                <td id="t2-cov-med" style="color: var(--primary-red);">—</td>
               </tr>
               <tr>
                 <th>Dải bao phủ ART [Min – Max %]</th>
@@ -1359,17 +1492,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <!-- ========================================== -->
-        <!-- MỤC 4: MÔ HÌNH HỒI QUY ML DỰ BÁO (TASK T1) (VỚI BIỂU ĐỒ ĐỐI CHIẾU THỰC TẾ) -->
+        <!-- MỤC 4: MÔ HÌNH HỒI QUY ML DỰ BÁO (TASK T1) -->
         <!-- ========================================== -->
         <div class="tab-section" id="tab-ml">
           <div class="section-head">
             <h3>🤖 Mô Hình Hồi Quy Dự Báo Số Ca Tử Vong</h3>
-            <p>Ứng dụng mô hình <b>Ridge Regression</b> tối ưu nhất từ bài báo (Task T1, R² = 0.85)</p>
+            <p>Ứng dụng mô hình <b>Ridge Regression</b> tối ưu (Task T1, R² = 0.85)</p>
           </div>
 
           <div class="formula-banner">
-            📐 <b>Mô hình:</b> log₁₀(Deaths) = 0.685 × log₁₀(PLHIV) + 0.150<br>
-            • Huấn luyện trên n = 67 quốc gia • Đạt CV R² = 0.696 • Test RMSE = 0.260
+            📐 <b>Phương trình hồi quy:</b> log₁₀(Deaths) = 0.685 × log₁₀(PLHIV) + 0.150<br>
+            • Huấn luyện trên n = 67 quốc gia • R² thực nghiệm = 0.854 • CV R² = 0.696
           </div>
 
           <!-- BIỂU ĐỒ 4: ĐỐI CHIẾU CỘT THỰC TẾ VS DỰ BÁO -->
@@ -1382,19 +1515,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <div class="ml-compare-grid">
               <div class="ml-card">
                 <div class="tag">Báo cáo thực tế</div>
-                <div class="number" id="ml-actual-num" style="color: #fff;">—</div>
+                <div class="number" id="ml-actual-num">—</div>
               </div>
-              <div class="ml-card" style="border-color: var(--primary);">
-                <div class="tag" style="color: var(--primary);">Ridge dự báo</div>
-                <div class="number" id="ml-pred-num" style="color: var(--primary);">—</div>
+              <div class="ml-card highlight">
+                <div class="tag" style="color: var(--primary-red);">Ridge dự báo</div>
+                <div class="number" id="ml-pred-num" style="color: var(--primary-red);">—</div>
               </div>
             </div>
 
-            <!-- THANH THỂ HIỆN SAI LỆCH -->
-            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 14px;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+            <div style="background: var(--bg-subtle); border-radius: 6px; padding: 8px 12px; border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem;">
                 <span style="color: var(--text-muted);">Sai lệch (Residual):</span>
-                <span id="ml-diff-val" style="color: var(--accent-yellow); font-weight: 700;">—</span>
+                <span id="ml-diff-val" style="color: var(--primary-red); font-weight: 700;">—</span>
               </div>
             </div>
           </div>
@@ -1408,11 +1540,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               </tr>
               <tr>
                 <th>Số ca tử vong ước lượng</th>
-                <td id="ml-res-pred" class="highlight-val">—</td>
+                <td id="ml-res-pred" class="highlight-red">—</td>
               </tr>
               <tr>
-                <th>Đánh giá độ chính xác</th>
-                <td id="ml-res-eval" style="font-size: 0.78rem;">Phù hợp với đường tương quan quy mô dân số nhiễm HIV.</td>
+                <th>Đánh giá dịch tễ</th>
+                <td id="ml-res-eval" style="font-size: 0.74rem;">Phù hợp với tương quan quy mô bệnh nhân nhiễm HIV toàn cầu.</td>
               </tr>
             </tbody>
           </table>
@@ -1429,26 +1561,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let appData = null;
     let currentMapMode = 'prevalence';
     let currentSelectedCountry = 'Vietnam';
-    let currentZoomScale = 1.0;
-    let currentCenter = { lat: 15, lon: 105 };
+    // MẶC ĐỊNH BẢN ĐỒ Ở GIỮA TOÀN CẦU (CENTERED WORLD VIEW)
+    const DEFAULT_CENTER = { lat: 18, lon: 10 };
+    const DEFAULT_SCALE = 1.02;
+    let currentZoomScale = DEFAULT_SCALE;
+    let currentCenter = { ...DEFAULT_CENTER };
 
-    // 1. Tải dữ liệu từ API server
     document.addEventListener('DOMContentLoaded', function() {
       fetch('/api/data')
         .then(res => res.json())
         .then(data => {
           appData = data;
+          initHeaderStats();
           initMap();
           initSearchAutocomplete();
-          // Mặc định chọn Việt Nam
-          selectCountry('Vietnam');
+          // Mặc định nạp dữ liệu Việt Nam trên bảng bên phải, nhưng bản đồ ở giữa toàn cầu!
+          const defaultC = appData.countries.find(x => x.name.toLowerCase() === 'vietnam');
+          if (defaultC) {
+            updateRightPanel(defaultC);
+            highlightSelectedCountryOnMap(defaultC.iso3);
+          }
         })
         .catch(err => {
           console.error("Lỗi tải API:", err);
         });
     });
 
-    // 2. Chuyển đổi Tab mượt mà (Google Maps Drawer style)
+    function initHeaderStats() {
+      if (!appData || !appData.global_stats) return;
+      const g = appData.global_stats;
+      document.getElementById('top-countries').innerText = g.total_countries + ' quốc gia';
+      document.getElementById('top-plhiv').innerText = g.total_plhiv;
+      document.getElementById('top-deaths').innerText = g.total_deaths + ' ca';
+    }
+
     function switchTab(tabId, tabIndex) {
       document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
         btn.classList.toggle('active', idx === tabIndex);
@@ -1463,12 +1609,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         target.classList.add('active');
       }
 
-      // Di chuyển indicator mượt mà
       const indicator = document.getElementById('tab-indicator');
       indicator.style.left = (tabIndex * 25) + '%';
     }
 
-    // 3. Khởi tạo bản đồ Plotly
     function initMap() {
       renderPlotlyChoropleth();
     }
@@ -1481,42 +1625,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       renderPlotlyChoropleth();
     }
 
+    // VẼ BẢN ĐỒ CHOROPLETH THEO PHONG CÁCH Y TẾ TRẮNG - ĐỎ
     function renderPlotlyChoropleth() {
       if (!appData) return;
       const m = appData.map_data;
       let zVals = m.prevalence;
+      
+      // BẢNG MÀU DỊCH TỄ HỌC Y TẾ (WHITE -> LIGHT ROSE -> MEDICAL RED -> DEEP BURGUNDY)
       let colorScale = [
-        [0, '#1e293b'],
-        [0.05, '#fef08a'],
-        [0.2, '#f97316'],
-        [0.5, '#ef4444'],
+        [0.0, '#ffffff'],
+        [0.05, '#fee2e2'],
+        [0.2, '#fca5a5'],
+        [0.4, '#ef4444'],
+        [0.7, '#dc2626'],
         [1.0, '#7f1d1d']
       ];
       let colorTitle = 'Tỷ lệ HIV (%)';
 
       if (currentMapMode === 'art_cov') {
         zVals = m.art_cov;
+        // BẢNG MÀU ĐIỀU TRỊ ART Y TẾ
         colorScale = [
-          [0, '#1e293b'],
-          [0.2, '#bbf7d0'],
-          [0.5, '#34d399'],
+          [0.0, '#ffffff'],
+          [0.2, '#fef3c7'],
+          [0.5, '#a7f3d0'],
           [0.8, '#10b981'],
-          [1.0, '#065f46']
+          [1.0, '#047857']
         ];
         colorTitle = 'Bao phủ ART (%)';
       } else if (currentMapMode === 'plhiv') {
         zVals = m.plhiv;
         colorScale = [
-          [0, '#1e293b'],
-          [0.1, '#e9d5ff'],
-          [0.3, '#c084fc'],
-          [0.6, '#a855f7'],
-          [1.0, '#581c87']
+          [0.0, '#ffffff'],
+          [0.1, '#ffe4e6'],
+          [0.3, '#f43f5e'],
+          [0.7, '#be123c'],
+          [1.0, '#881337']
         ];
         colorTitle = 'Số ca nhiễm';
       }
 
-      // Trace 0: Lớp bản đồ chính
       const traceBase = {
         type: 'choropleth',
         locations: m.iso3,
@@ -1527,34 +1675,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         autocolorscale: false,
         reversescale: false,
         marker: {
-          line: { color: '#334155', width: 0.5 }
+          line: { color: '#cbd5e1', width: 0.6 }
         },
         colorbar: {
-          title: { text: colorTitle, font: { color: '#94a3b8', size: 11 } },
-          tickfont: { color: '#94a3b8' },
-          len: 0.6,
+          title: { text: colorTitle, font: { color: '#475569', size: 10, family: 'sans-serif' } },
+          tickfont: { color: '#475569', size: 9 },
+          len: 0.55,
           thickness: 10,
           x: 0.98,
-          y: 0.5
+          y: 0.5,
+          bgcolor: 'rgba(255,255,255,0.85)',
+          bordercolor: '#e2e8f0',
+          borderwidth: 1
         }
+      };
+
+      const currCountry = appData.countries.find(x => x.name.toLowerCase() === currentSelectedCountry.toLowerCase());
+      const selectedIso = currCountry ? currCountry.iso3 : 'VNM';
+
+      // TRACE HIGHLIGHT CHO QUỐC GIA ĐANG CHỌN (VIỀN ĐỎ Y TẾ NỔI BẬT)
+      const traceHighlight = {
+        type: 'choropleth',
+        locations: [selectedIso],
+        z: [1],
+        showscale: false,
+        colorscale: [[0, '#dc2626'], [1, '#dc2626']],
+        marker: {
+          line: { color: '#991b1b', width: 2.2 }
+        },
+        hoverinfo: 'none'
       };
 
       const layout = {
         geo: {
           showframe: false,
           showcoastlines: true,
-          coastlinecolor: '#475569',
+          coastlinecolor: '#94a3b8',
           showcountries: true,
-          countrycolor: '#334155',
+          countrycolor: '#cbd5e1',
+          showocean: true,
+          oceancolor: '#f8fafc',
+          showland: true,
+          landcolor: '#ffffff',
+          showlakes: true,
+          lakecolor: '#f8fafc',
           projection: {
             type: 'natural earth',
             scale: currentZoomScale
           },
           center: currentCenter,
-          bgcolor: '#090d16'
+          bgcolor: '#f8fafc'
         },
-        paper_bgcolor: '#090d16',
-        plot_bgcolor: '#090d16',
+        paper_bgcolor: '#f8fafc',
+        plot_bgcolor: '#f8fafc',
         margin: { l: 0, r: 0, t: 0, b: 0 }
       };
 
@@ -1564,9 +1737,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         scrollZoom: true
       };
 
-      Plotly.newPlot('world-map-plot', [traceBase], layout, config);
+      Plotly.newPlot('world-map-plot', [traceBase, traceHighlight], layout, config);
 
-      // Bắt sự kiện nhấp chuột vào quốc gia
       const plotEl = document.getElementById('world-map-plot');
       plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_click');
       plotEl.on('plotly_click', function(data) {
@@ -1580,7 +1752,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
     }
 
-    // 4. ANIMATION BAY/ZOOM MƯỢT MÀ VÀ HIGHLIGHT QUỐC GIA (GOOGLE MAPS STYLE)
+    function highlightSelectedCountryOnMap(iso) {
+      if (!iso) return;
+      try {
+        Plotly.restyle('world-map-plot', {
+          locations: [[iso]]
+        }, [1]);
+      } catch (e) {}
+    }
+
+    // CHỌN QUỐC GIA: BAY/ZOOM MƯỢT MÀ VÀ CẬP NHẬT BẢNG BÊN PHẢI
     function selectCountry(name) {
       if (!appData) return;
       const c = appData.countries.find(x => x.name.toLowerCase() === name.toLowerCase());
@@ -1588,16 +1769,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       currentSelectedCountry = c.name;
 
-      // Tính toán tâm bay tới
       if (c.lat !== 0 || c.lon !== 0) {
         currentCenter = { lat: c.lat, lon: c.lon };
-        currentZoomScale = 2.4; // Zoom vào gần hơn
+        currentZoomScale = 2.4;
       } else {
-        currentCenter = { lat: 10, lon: 20 };
+        currentCenter = { ...DEFAULT_CENTER };
         currentZoomScale = 1.6;
       }
 
-      // Thực hiện Camera Flight Animation trên Plotly
+      // Camera flight animation
       Plotly.animate('world-map-plot', {
         layout: {
           geo: {
@@ -1610,18 +1790,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         frame: { duration: 900 }
       });
 
-      // Cập nhật dữ liệu vào Sidebar bên phải
+      highlightSelectedCountryOnMap(c.iso3);
       updateRightPanel(c);
     }
 
-    // 5. Cập nhật chi tiết 4 Mục vào Sidebar bên phải
     function updateRightPanel(c) {
-      // Header
       document.getElementById('panel-country-name').innerText = c.name;
       document.getElementById('panel-iso').innerText = `ISO: ${c.iso3 || 'N/A'}`;
-      document.getElementById('panel-region').innerText = c.region;
+      document.getElementById('panel-region').innerText = `Khu vực: ${c.region}`;
 
-      // Flag tương ứng
       const flags = {
         'Vietnam': '🇻🇳', 'South Africa': '🇿🇦', 'Thailand': '🇹🇭', 'Eswatini': '🇸🇿',
         'United States': '🇺🇸', 'France': '🇫🇷', 'Kenya': '🇰🇪', 'Botswana': '🇧🇼',
@@ -1640,7 +1817,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('ov-art-count').innerText = c.kpi.art_count_display;
       document.getElementById('ov-region').innerText = c.region;
 
-      // Hoạt ảnh Gauge Donut
+      // Donut Gauge Progress
       const covVal = c.kpi.art_cov_val || 0;
       const strokeMax = 345;
       const strokeOffset = strokeMax - (strokeMax * Math.min(covVal, 100) / 100);
@@ -1649,13 +1826,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('gauge-pct-text').innerText = `${covVal}%`;
 
       if (covVal >= 90) {
-        document.getElementById('gauge-eval-text').innerHTML = "🌟 <b>Đạt chuẩn xuất sắc:</b> Đã tiến rất sát mốc 95% của UNAIDS.";
+        document.getElementById('gauge-eval-text').innerHTML = "🌟 <b>Đạt chuẩn xuất sắc:</b> Đã tiến sát mốc 95% của UNAIDS.";
       } else if (covVal >= 60) {
-        document.getElementById('gauge-eval-text').innerHTML = "👍 <b>Tiến độ khá:</b> Đang trên lộ trình mở rộng điều trị.";
+        document.getElementById('gauge-eval-text').innerHTML = "👍 <b>Tiến độ khả quan:</b> Đang trên lộ trình mở rộng điều trị.";
       } else if (covVal > 0) {
-        document.getElementById('gauge-eval-text').innerHTML = "⚠️ <b>Cần nỗ lực:</b> Cần đẩy mạnh độ bao phủ thuốc kháng virus.";
+        document.getElementById('gauge-eval-text').innerHTML = "⚠️ <b>Cần can thiệp:</b> Cần tăng cường độ bao phủ thuốc kháng virus.";
       } else {
-        document.getElementById('gauge-eval-text').innerText = "Chưa có đủ số liệu báo cáo độ phủ ART.";
+        document.getElementById('gauge-eval-text').innerText = "Chưa có đủ số liệu báo cáo độ bao phủ điều trị.";
       }
 
       // --- MỤC 2: BẢNG 1 (DỊCH TỄ & BIỂU ĐỒ SO SÁNH) ---
@@ -1665,9 +1842,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('t1-plhiv-val').innerText = t1.plhiv_raw;
       document.getElementById('t1-deaths-val').innerText = t1.deaths_raw;
       document.getElementById('t1-year-val').innerText = t1.year_raw;
-      document.getElementById('t1-status-val').innerText = t1.has_data ? "Đã ghi nhận trong báo cáo" : "Không có dữ liệu trong file";
+      document.getElementById('t1-status-val').innerText = t1.has_data ? "Đã ghi nhận trong báo cáo UNAIDS" : "Không có dữ liệu trong tệp";
 
-      // Biểu đồ thanh so sánh HIV %
       const countryPrev = c.kpi.prevalence_val || 0;
       const regAvg = (appData.region_averages[c.region] && appData.region_averages[c.region].avg_prev) || 1.0;
       const globAvg = appData.global_stats.avg_prev_num || 1.85;
@@ -1704,7 +1880,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
       document.getElementById('t2-cov-span').innerText = covSpan;
 
-      // Biểu đồ Range Min-Median-Max
       const minCov = t2.art_cov_min || covVal;
       const maxCov = t2.art_cov_max || covVal;
       document.getElementById('range-lbl-min').innerText = `Min: ${minCov}%`;
@@ -1726,7 +1901,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('ml-diff-val').innerText = ml.diff_display;
     }
 
-    // 6. Gợi ý tìm kiếm Autocomplete
     function initSearchAutocomplete() {
       const input = document.getElementById('map-search');
       const box = document.getElementById('suggestions-box');
@@ -1781,7 +1955,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
     }
 
-    // 7. Các nút Zoom & Reset View
     function zoomMap(factor) {
       currentZoomScale = Math.max(Math.min(currentZoomScale * factor, 6.0), 0.8);
       Plotly.relayout('world-map-plot', {
@@ -1789,9 +1962,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
     }
 
+    // CĂN GIỮA MẶC ĐỊNH TOÀN BỘ TRÁI ĐẤT
     function resetMapView() {
-      currentZoomScale = 1.0;
-      currentCenter = { lat: 15, lon: 10 };
+      currentZoomScale = DEFAULT_SCALE;
+      currentCenter = { ...DEFAULT_CENTER };
       Plotly.animate('world-map-plot', {
         layout: {
           geo: {
@@ -1857,7 +2031,7 @@ def run_server(port=8000, open_browser=True):
 
     url = f"http://127.0.0.1:{port}"
     print("=" * 70)
-    print("🚀 GOOGLE MAPS HIV/AIDS DASHBOARD (DH23TIN07)")
+    print("🚀 HỆ THỐNG GIÁM SÁT DỊCH TỄ HIV/AIDS TOÀN CẦU (DH23TIN07)")
     print("=" * 70)
     print(f"👉 Server đang chạy tại: {url}")
     print(f"👉 Đang mở trình duyệt...")
