@@ -243,7 +243,6 @@ def load_all_data():
         if iso3: used_isos[iso3] = item
         country_list.append(item)
 
-    # Tính toán trung bình theo khu vực WHO
     region_stats = {}
     for c in country_list:
         r = c['region']
@@ -1563,7 +1562,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   </div>
 
-  <!-- JAVASCRIPT ĐIỀU KHIỂN BẢN ĐỒ & TABS ANIMATION -->
+  <!-- JAVASCRIPT -->
   <script>
     let appData = null;
     let currentMapMode = 'prevalence';
@@ -1626,13 +1625,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       renderPlotlyChoropleth();
     }
 
-    // VẼ BẢN ĐỒ CHOROPLETH THEO PHONG CÁCH Y TẾ TRẮNG - ĐỎ
     function renderPlotlyChoropleth() {
       if (!appData) return;
       const m = appData.map_data;
       let zVals = m.prevalence;
-      
-      // BẢNG MÀU DỊCH TỄ HỌC Y TẾ (WHITE -> LIGHT ROSE -> MEDICAL RED -> DEEP BURGUNDY)
+
       let colorScale = [
         [0.0, '#ffffff'],
         [0.05, '#fee2e2'],
@@ -1764,7 +1761,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       } catch (e) {}
     }
 
-    // CHỌN QUỐC GIA: BAY/ZOOM MƯỢT MÀ VÀ CẬP NHẬT BẢNG BÊN PHẢI
     function selectCountry(name) {
       if (!appData) return;
       const c = appData.countries.find(x => x.name.toLowerCase() === name.toLowerCase());
