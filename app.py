@@ -752,11 +752,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       height: 100%;
       background: var(--bg-surface);
       border-left: 1px solid var(--border-color);
-      display: flex;
+      display: none;
       flex-direction: column;
       box-shadow: -4px 0 25px rgba(0, 0, 0, 0.05);
       z-index: 30;
       position: relative;
+    }
+
+    .side-panel.has-selection {
+      display: flex;
     }
 
     /* CLINICAL TOP ACCENT BAR */
@@ -1164,6 +1168,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       .map-container {
         height: 50vh;
       }
+      .app-layout:not(:has(.side-panel.has-selection)) .map-container {
+        height: 100%;
+      }
     }
   </style>
 </head>
@@ -1239,7 +1246,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
 
     <!-- SIDEBAR / INFO PANEL (RIGHT SIDE - 4 MEDICAL TABS) -->
-    <div class="side-panel">
+    <div class="side-panel" id="side-panel">
       
       <!-- CLINICAL PANEL HEADER -->
       <div class="panel-header">
@@ -1265,11 +1272,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </button>
         <button class="tab-btn" onclick="switchTab('tab-table1', 1)">
           <span class="tab-icon">📊</span>
-          <span>Bảng 1: Dịch tễ</span>
+          <span>Dịch tễ</span>
         </button>
         <button class="tab-btn" onclick="switchTab('tab-table2', 2)">
           <span class="tab-icon">💊</span>
-          <span>Bảng 2: Điều trị</span>
+          <span>Điều trị ART</span>
         </button>
         <button class="tab-btn" onclick="switchTab('tab-ml', 3)">
           <span class="tab-icon">🤖</span>
@@ -1355,7 +1362,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <!-- ========================================== -->
         <div class="tab-section" id="tab-table1">
           <div class="section-head">
-            <h3>📊 Bảng 1: Ước Tính Hiện Nhiễm & Tử Vong</h3>
+            <h3>📊 Ước Tính Hiện Nhiễm & Tử Vong</h3>
             <p>Trích xuất từ: <code>HIV_AIDS prevalence estimates table.csv</code></p>
           </div>
 
@@ -1433,7 +1440,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <!-- ========================================== -->
         <div class="tab-section" id="tab-table2">
           <div class="section-head">
-            <h3>💊 Bảng 2: Tình Hình Điều Trị Thuốc Kháng Virus (ART)</h3>
+            <h3>💊 Tình Hình Điều Trị Thuốc Kháng Virus (ART)</h3>
             <p>Trích xuất từ: <code>art_coverage_by_country_clean.csv</code></p>
           </div>
 
@@ -1560,7 +1567,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <script>
     let appData = null;
     let currentMapMode = 'prevalence';
-    let currentSelectedCountry = 'Vietnam';
+    let currentSelectedCountry = null;
     // MẶC ĐỊNH BẢN ĐỒ Ở GIỮA TOÀN CẦU (CENTERED WORLD VIEW)
     const DEFAULT_CENTER = { lat: 18, lon: 10 };
     const DEFAULT_SCALE = 1.02;
@@ -1575,12 +1582,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           initHeaderStats();
           initMap();
           initSearchAutocomplete();
-          // Mặc định nạp dữ liệu Việt Nam trên bảng bên phải, nhưng bản đồ ở giữa toàn cầu!
-          const defaultC = appData.countries.find(x => x.name.toLowerCase() === 'vietnam');
-          if (defaultC) {
-            updateRightPanel(defaultC);
-            highlightSelectedCountryOnMap(defaultC.iso3);
-          }
         })
         .catch(err => {
           console.error("Lỗi tải API:", err);
@@ -1690,14 +1691,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
       };
 
-      const currCountry = appData.countries.find(x => x.name.toLowerCase() === currentSelectedCountry.toLowerCase());
-      const selectedIso = currCountry ? currCountry.iso3 : 'VNM';
+      const currCountry = currentSelectedCountry
+        ? appData.countries.find(x => x.name.toLowerCase() === currentSelectedCountry.toLowerCase())
+        : null;
+      const selectedIso = currCountry ? currCountry.iso3 : null;
 
       // TRACE HIGHLIGHT CHO QUỐC GIA ĐANG CHỌN (VIỀN ĐỎ Y TẾ NỔI BẬT)
       const traceHighlight = {
         type: 'choropleth',
-        locations: [selectedIso],
-        z: [1],
+        locations: selectedIso ? [selectedIso] : [],
+        z: selectedIso ? [1] : [],
         showscale: false,
         colorscale: [[0, '#dc2626'], [1, '#dc2626']],
         marker: {
@@ -1753,10 +1756,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function highlightSelectedCountryOnMap(iso) {
-      if (!iso) return;
       try {
         Plotly.restyle('world-map-plot', {
-          locations: [[iso]]
+          locations: [iso ? [iso] : []],
+          z: [iso ? [1] : []]
         }, [1]);
       } catch (e) {}
     }
@@ -1768,6 +1771,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if (!c) return;
 
       currentSelectedCountry = c.name;
+      document.getElementById('side-panel').classList.add('has-selection');
 
       if (c.lat !== 0 || c.lon !== 0) {
         currentCenter = { lat: c.lat, lon: c.lon };
@@ -1966,6 +1970,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     function resetMapView() {
       currentZoomScale = DEFAULT_SCALE;
       currentCenter = { ...DEFAULT_CENTER };
+      currentSelectedCountry = null;
+      document.getElementById('side-panel').classList.remove('has-selection');
       Plotly.animate('world-map-plot', {
         layout: {
           geo: {
@@ -1977,6 +1983,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         transition: { duration: 800, easing: 'cubic-in-out' },
         frame: { duration: 800 }
       });
+      highlightSelectedCountryOnMap(null);
     }
   </script>
 </body>
